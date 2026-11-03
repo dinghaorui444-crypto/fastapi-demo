@@ -1,57 +1,60 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-app = FastAPI()
-@app.get("/")
-def read_root():
-    return {"message":"hello fastapi from mac","status":"success"}
+# 创建 FastAPI 应用实例，并加上标题和版本号提升规范度
+app = FastAPI(title="FastAPI 综合实战演练", version="1.0.0")
 
-@app.get("/hello/{name}")
-def say_hello(name: str):
-    return {"greeting": f"hello,{name}! welcome fastapi world"}
+# 1. 模拟一个内存中的数据库（用字典存放店铺/商品数据）
+fake_tasks_db = {
+    1: {"name": "A", "price": 100, "comments": 100000},
+    2: {"name": "B", "price": 20, "comments": 29}
+}
 
-#模拟你刚刚在 Flask 项目里做过的“任务管理”数据
-fake_tasks_db = [
-    {"id": 1, "title": "学习 FastAPI 基础", "minutes": 60, "done": True},
-    {"id": 2, "title": "攻克 Pydantic 数据验证", "minutes": 45, "done": False}
-]
-
-# 1. 写一个获取所有任务的接口 (GET)
-@app.get("/api/tasks")
-def get_tasks():
+# ==========================================
+# 2. 接口一：店铺商品查询接口（结合 路径参数 + 查询参数）
+# ==========================================
+@app.get("/api/shops/{shop_id}/items")
+def get_shop_items(shop_id: int, category: str = "all"):
+    """
+    - shop_id: 路径参数（动态身份证号，如 /api/shops/1/items）
+    - category: 查询参数（可选筛选条件，默认值为 "all"）
+    """
+    shop = fake_tasks_db.get(shop_id)
+    
+    # 防御性判断：如果没有查到该店铺
+    if not shop:
+        return {
+            "status": "error",
+            "message": f"未找到 ID 为 {shop_id} 的店铺！"
+        }
+    
+    # 成功查到，返回数据与分类
     return {
         "status": "success",
-        "total": len(fake_tasks_db),
-        "data": fake_tasks_db
+        "shop_result": shop,
+        "category": category
     }
 
-@app.get("/api/user/profile")
-def get_user_profile():
-    return {
-        "code": 200,
-        "message": "get user profile",
-        "data": {
-            "username": "jerry",
-            "level": 3,
-            "is_active": True,
-            "skills": ["python","fastapi","restful api"],
-            "recent_task": {
-               "id": 1,
-               "title": "finish json and api rule",
-               "completed": False
-            }
-        }
-    }
 
-class TaskCreate(BaseModel):
-    title: str
-    minutes: int
-    done: bool = False
+# ==========================================
+# 3. 接口二：用户下单接口（结合 Pydantic 安检模型 + POST）
+# ==========================================
+class OrderCreate(BaseModel):
+    """
+    Pydantic 安检模型：用来自动拦截并校验前端传过来的 JSON 数据格式
+    """
+    item_name: str                  # 必填：商品名称
+    quantity: int = 1               # 可选：购买数量（默认值 1）
+    express_shipping: bool = False  # 可选：是否加急（默认值 False）
 
-@app.post("/api/tasks")
-def create_task(task: TaskCreate):
+
+@app.post("/api/orders")
+def create_order(order: OrderCreate):
+    """
+    POST 接口：接收并安检用户提交的订单数据
+    """
     return {
-        "status":"success",
-        "message": "new tasks success",
-        "create_data": task
+        "status": "success",
+        "message": "订单创建成功！",
+        "order_data": order
     }
