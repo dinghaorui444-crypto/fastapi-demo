@@ -1,0 +1,13 @@
+# 忽略 Python 虚拟环境
+venv/
+.venv/
+
+# 忽略 Python 字节码缓存
+__pycache__/
+
+# 忽略本地测试数据库
+database.db
+
+# 忽略编辑器配置（可选，比如 VS Code 或 PyCharm 自动生成的配置）
+.vscode/
+.idea/
